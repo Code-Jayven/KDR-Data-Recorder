@@ -1,0 +1,60 @@
+// ----Modified data packet struct for 2 sensor MCU combo
+//Collected IMU Data for magdwick preprocess,
+struct IMUData{
+  float ax, ay, az;  // Accelerometer in g's
+  float gx, gy, gz;  // Gyroscope in degrees/second
+  float dt;          // Sampling period in seconds
+};
+
+struct Quaternion { //Squant Structure, ~16 bytes via float = 4 bytes
+  float q0;
+  float q1;
+  float q2;
+  float q3;
+};
+
+// ----Modified data packet struct for 2 sensor MCU combo
+typedef struct __attribute__((packed)) { //TOTAL PAYLOAD: 39 bytes
+  uint8_t ID; //needs ID since we have more packets to worry bout
+  Quaternion q1;          // first quaternion, upper segment
+  Quaternion q2;          //second quaternion, lower segment
+  uint8_t as1[2];       // analog sensor data, each being from 0-255, upper segment
+  uint8_t as2[2];     //  analog sensor data lower segment
+  uint8_t comment;
+  uint8_t check;
+} SensorData; //classic sensor pack, Runs as 0x05 in the system
+
+SensorData sensorData; //0x05 sensor /2 IMU 4 AN/ Packet
+
+typedef struct __attribute__((packed)) { //TOTAL PAYLOAD: 67 bytes
+  uint8_t ID; //needs ID since we have more packets to worry about, this unique packet is 0x08
+  Quaternion u1;          // first quaternion, humerous (upper arm) segment ~16 Bytes via FLOATING Point vals
+  Quaternion l2;         //second quaternion, forearm segment
+  Quaternion h1;         //hand segemnt
+  uint16_t ADS1[4];       // analog sensor data from the ADS1115 or ADS1015 series ADC extension, 16 bytes per unit (~8 bytes per 4 unit list)
+  uint16_t ADS2[4];       // analog sensor data from second ADS chip
+  uint8_t comment;
+  uint8_t check;
+} BigPackData; //unique to ID 0x08 , Mainly for arms or sensor density resizing
+
+//UART based packets for Recieve and Sending (acknowlegement packets, CMD packets accepted {CMD packet NOT inclduded in this list})
+typedef struct __attribute__((packed)){ //small CMD packet, check is usually XOR but list says it can be diffrent (must match or its not considered)
+  uint8_t ID; //unique ID
+  uint8_t Check; //check-value, doesnt have to be XOR but prefered
+}BytePack2;
+//BytePack2 based messages:
+BytePack2 ToggPack = {0x01,0xFE}; //sends back same pack as acknoledgement
+BytePack2 StopPack = {0x02,0xFD}; //sends back same pack as acknowledgement
+BytePack2 RollCallINPack = {0x03,0xFC}; 
+BytePack2 RollCallOUTPack = {0x03,0xCC};
+BytePack2 MotorAckPack = {0x04,0xFC};
+
+typedef struct __attribute__((packed)){ //4 Byte Packet for Detailed control (think motors, GPIO combinations)
+  uint8_t ID; //unique ID
+  uint8_t byteU; //special byte that
+  uint8_t byteL; //Identifies the motor it controls (1 or 2), if above 2, then other functionality is present (other motors, GPIO ect.)
+  uint8_t Check; //check-value, doesnt have to be XOR but prefered
+}BytePack4;
+//note, these come unmade, packets, fill er up
+BytePack4 MotorPack = {0x04,0,0x00,0xFB}; //Motor command, reciever can draw on this as a "last recieved cmd" memory, transmitter uses memcopy to make new alterations
+BytePack4 ERRPack = {0x04,0,0x00,0xFC}; //ERROR pack, integer is type, byte is a specific detail, refer to above for usage
