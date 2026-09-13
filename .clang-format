@@ -1,0 +1,15 @@
+# NOTE: Install clang-format then run it against the *.c files:
+# clang-format -i *.c
+
+BasedOnStyle: LLVM
+Language: Cpp
+
+# Keep the project's compact comment style and trailing comments intact.
+SpacesInLineCommentPrefix:
+  Minimum: 0
+  Maximum: 0
+ReflowComments: false
+ColumnLimit: 0
+
+# Keep opening braces with control statements and function definitions.
+BreakBeforeBraces: Attach
